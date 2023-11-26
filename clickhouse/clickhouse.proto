@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+option go_package = "./clickhouse";
+
+service AliYunClickhouse {
+  rpc KeepAlive (KeepAliveRequest) returns (KeepAliveResponse) {}
+}
+
+message KeepAliveRequest {
+  string RegionID = 1;
+  string DBInstanceID = 2;
+}
+message KeepAliveResponse {
+  bool success = 1;
+}
