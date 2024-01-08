@@ -38,7 +38,7 @@ dbInstances:
 
 ```
 
-- `docker run -d --name=alicloud-clickhouse-autopause -v /path/to/config.yaml:/config.yaml -p 80:80 zhangbc/alicloud-clickhouse-autopause:latest`
+- `docker run -d --name=alicloud-clickhouse-autopause -v /path/to/config:/config -p 80:80 zhangbc/alicloud-clickhouse-autopause:latest`
 
 ## 使用限制
 

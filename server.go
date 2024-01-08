@@ -4,11 +4,12 @@ import (
 	pb "alicloud-clickhouse-autopause/clickhouse"
 	"context"
 	"fmt"
-	"google.golang.org/grpc"
 	"log"
 	"net"
 	"sync"
 	"time"
+
+	"google.golang.org/grpc"
 )
 
 var globalLock = sync.Mutex{}
@@ -48,26 +49,24 @@ func SyncInstanceStatusTicket(config *ServerConfig, instances map[string]DBInsta
 	ticker := time.NewTicker(time.Duration(config.SyncStatusIntervalSeconds) * time.Second)
 
 	go func(ticker *time.Ticker) {
-		for {
-			select {
-			case <-ticker.C:
-				globalLock.Lock()
-				log.Default().Println("Sync instance status")
-				for _, instance := range instances {
-					instanceConfig := GetDBInstanceConfig(config, instance.DBInstanceAttribute.Data.RegionID, instance.DBInstanceAttribute.Data.DBInstanceID)
-					// 调用DescribeDBInstanceAttribute
-					res, err := pb.DescribeDBInstanceAttribute(instanceConfig.AccessKeyID, instanceConfig.AccessKeySecret, instanceConfig.RegionID, instanceConfig.DBInstanceID)
+		for range ticker.C {
+			globalLock.Lock()
+			log.Default().Println("Sync instance status")
+			for _, instance := range instances {
+				instanceConfig := GetDBInstanceConfig(config, instance.DBInstanceAttribute.Data.RegionID, instance.DBInstanceAttribute.Data.DBInstanceID)
+				// 调用DescribeDBInstanceAttribute
+				res, err := pb.DescribeDBInstanceAttribute(instanceConfig.AccessKeyID, instanceConfig.AccessKeySecret, instanceConfig.RegionID, instanceConfig.DBInstanceID)
 
-					if err != nil {
-						log.Default().Println(err)
-						continue
-					}
-
-					instance.DBInstanceAttribute = res
+				if err != nil {
+					log.Default().Println(err)
+					continue
 				}
-				globalLock.Unlock()
+
+				instance.DBInstanceAttribute = res
 			}
+			globalLock.Unlock()
 		}
+
 	}(ticker)
 }
 
@@ -76,34 +75,31 @@ func StopInstanceTimer(config *ServerConfig, instances map[string]DBInstanceStat
 	ticker := time.NewTicker(time.Duration(config.IdleCheckIntervalSeconds) * time.Second)
 
 	go func(ticker *time.Ticker) {
-		for {
-			select {
-			case <-ticker.C:
-				globalLock.Lock()
-				// 超过一定时间没有请求，就停止数据库实例
-				log.Default().Println("Check instance status")
-				for _, instance := range instances {
-					if time.Now().Sub(instance.lastConnTime).Seconds() > float64(config.IdleSecondsBeforeStop) && instance.DBInstanceAttribute.Data.Status == "RUNNING" {
-						instanceConfig := GetDBInstanceConfig(config, instance.DBInstanceAttribute.Data.RegionID, instance.DBInstanceAttribute.Data.DBInstanceID)
-						// 调用StopDBInstance
-						log.Default().Println("Start stop instance: %s, last conn time: %s", instanceConfig.DBInstanceID, instance.lastConnTime.String())
-						_, err := pb.StopDBInstance(instanceConfig.AccessKeyID, instanceConfig.AccessKeySecret, instanceConfig.RegionID, instanceConfig.DBInstanceID, config.WaitStatusIntervalSeconds)
+		for range ticker.C {
+			globalLock.Lock()
+			// 超过一定时间没有请求，就停止数据库实例
+			log.Default().Println("Check instance status")
+			for _, instance := range instances {
+				if time.Since(instance.lastConnTime).Seconds() > float64(config.IdleSecondsBeforeStop) && instance.DBInstanceAttribute.Data.Status == "RUNNING" {
+					instanceConfig := GetDBInstanceConfig(config, instance.DBInstanceAttribute.Data.RegionID, instance.DBInstanceAttribute.Data.DBInstanceID)
+					// 调用StopDBInstance
+					log.Default().Printf("Start stop instance: %s, last conn time: %s", instanceConfig.DBInstanceID, instance.lastConnTime.String())
+					_, err := pb.StopDBInstance(instanceConfig.AccessKeyID, instanceConfig.AccessKeySecret, instanceConfig.RegionID, instanceConfig.DBInstanceID, config.WaitStatusIntervalSeconds)
 
-						if err != nil {
-							log.Default().Println(err)
-							continue
-						}
-
-						log.Default().Println("Stop instance success: %s", instanceConfig.DBInstanceID)
+					if err != nil {
+						log.Default().Println(err)
+						continue
 					}
+
+					log.Default().Printf("Stop instance success: %s", instanceConfig.DBInstanceID)
 				}
-				globalLock.Unlock()
 			}
+			globalLock.Unlock()
 		}
 	}(ticker)
 }
 
-func (s *server) K(ctx context.Context, in *pb.KeepAliveRequest) (*pb.KeepAliveResponse, error) {
+func (s *server) KeepAlive(ctx context.Context, in *pb.KeepAliveRequest) (*pb.KeepAliveResponse, error) {
 
 	globalLock.Lock()
 
@@ -135,7 +131,7 @@ func (s *server) K(ctx context.Context, in *pb.KeepAliveRequest) (*pb.KeepAliveR
 	} else {
 		config := GetDBInstanceConfig(s.config, in.RegionID, in.DBInstanceID)
 		// 走到这不需要判断config是否为空，因为上面已经判断过了
-		log.Default().Println("Start start instance: %s", config.DBInstanceID)
+		log.Default().Printf("Start start instance: %s", config.DBInstanceID)
 		_, err := pb.StartDBInstance(config.AccessKeyID, config.AccessKeySecret, config.RegionID, config.DBInstanceID, s.config.WaitStatusIntervalSeconds)
 
 		if err != nil {
@@ -147,7 +143,7 @@ func (s *server) K(ctx context.Context, in *pb.KeepAliveRequest) (*pb.KeepAliveR
 }
 
 func main() {
-	serverConfig, err := ReadConfig("config.yaml")
+	serverConfig, err := ReadConfig("config/config.yaml")
 
 	if err != nil {
 		log.Fatalf("ReadConfig failed, err: %v", err)
