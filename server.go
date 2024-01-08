@@ -149,6 +149,25 @@ func main() {
 		log.Fatalf("ReadConfig failed, err: %v", err)
 	}
 
+	// 初始化instances
+	for _, instance := range serverConfig.DbInstances {
+
+		attr, err := pb.DescribeDBInstanceAttribute(instance.AccessKeyID, instance.AccessKeySecret, instance.RegionID, instance.DBInstanceID)
+
+		if err != nil {
+			log.Fatalf("DescribeDBInstanceAttribute failed, err: %v", err)
+		}
+
+		instances[instance.DBInstanceID] = DBInstanceStatus{
+			RegionID:            instance.RegionID,
+			DBInstanceID:        instance.DBInstanceID,
+			DBInstanceAttribute: attr,
+			lastConnTime:        time.Now(),
+		}
+	}
+
+	log.Default().Printf("instances: %v", instances)
+
 	// 把两个定时器都启动
 	SyncInstanceStatusTicket(&serverConfig, instances)
 	StopInstanceTimer(&serverConfig, instances)

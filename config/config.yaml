@@ -1,18 +1,18 @@
 port: 80
 
-idleSecondsBeforeStop: 300       # 暂停服务前的空闲时间
-idleCheckIntervalSeconds: 10     # 检查是否需要暂停服务的时间间隔
-syncStatusIntervalSeconds: 60    # 定时同步最新状态的时间间隔
-waitStatusIntervalSeconds: 300    # 启停操作等待的时间
+idleSecondsBeforeStop: 300 # 暂停服务前的空闲时间
+idleCheckIntervalSeconds: 10 # 检查是否需要暂停服务的时间间隔
+syncStatusIntervalSeconds: 60 # 定时同步最新状态的时间间隔
+waitStatusIntervalSeconds: 300 # 启停操作等待的时间
 
 # 在这里完善Clickhouse配置
 dbInstances:
-  - regionID: 'cn-beijing'
-    dbInstanceID: ''
+  - regionID: "cn-beijing"
+    dbInstanceID: ""
 
-    accessKeyID: ''
-    accessKeySecret: ''
+    accessKeyID: ""
+    accessKeySecret: ""
 
-    serverAddress: ''
+    serverAddress: ""
     serverHttpPort: 8123
     serverTcpPort: 9000
