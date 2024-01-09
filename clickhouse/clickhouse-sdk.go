@@ -2,11 +2,12 @@ package clickhouse
 
 import (
 	"encoding/json"
+	"log"
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"log"
-	"time"
 )
 
 func CallClickhouseAPI(ak string, sk string, apiName string, regionId string, DBInstanceId string, v any) error {
@@ -63,10 +64,7 @@ type DescribeDBInstanceAttributeResponse struct {
 		ScaleMax                 int           `json:"ScaleMax"`
 		LockMode                 int           `json:"LockMode"`
 		Nodes                    []struct {
-			Ccu        int    `json:"CCU"`
-			Memory     int    `json:"Memory"`
-			CPUCores   int    `json:"CpuCores"`
-			String     string `json:"String"`
+			ZoneID     string `json:"ZoneId"`
 			NodeStatus string `json:"NodeStatus"`
 		} `json:"Nodes"`
 		VpcID      string `json:"VpcId"`
@@ -114,7 +112,7 @@ func WaitForInstanceStatus(ak string, sk string, regionId string, DBInstanceId s
 			break
 		}
 		time.Sleep(5 * time.Second)
-		if time.Now().Sub(startTime).Seconds() > float64(maxWaitSeconds) {
+		if time.Since(startTime).Seconds() > float64(maxWaitSeconds) {
 			return false, nil
 		}
 
