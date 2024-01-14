@@ -134,10 +134,11 @@ func (s *server) KeepAlive(ctx context.Context, in *pb.KeepAliveRequest) (*pb.Ke
 	if instance.DBInstanceAttribute.Data.Status == "ACTIVATION" {
 		instance.lastConnTime = time.Now()
 
-	} else if instance.DBInstanceAttribute.Data.Status == "STOPPED" {
+	} else if instance.DBInstanceAttribute.Data.Status == "STOPPED" || instance.DBInstanceAttribute.Data.Status == "STARTING" {
 		config := GetDBInstanceConfig(s.config, in.RegionID, in.DBInstanceID)
 		// 走到这不需要判断config是否为空，因为上面已经判断过了
 		log.Default().Printf("KeepAlive: Start start instance: %s", config.DBInstanceID)
+		// StartDBInstance 会自动处理STARTING的状态
 		_, err := pb.StartDBInstance(config.AccessKeyID, config.AccessKeySecret, config.RegionID, config.DBInstanceID, s.config.WaitStatusIntervalSeconds)
 
 		if err != nil {

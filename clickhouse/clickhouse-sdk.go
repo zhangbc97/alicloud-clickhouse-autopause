@@ -143,8 +143,6 @@ func StopDBInstance(ak string, sk string, regionId string, DBInstanceId string, 
 }
 func StartDBInstance(ak string, sk string, regionId string, DBInstanceId string, maxWaitSeconds int) (bool, error) {
 	// 只有状态是STOPPED的时候才能执行启动操作
-	// 判断启动成功的标志是后端的HTTP状态码是200，实测接口延迟比较大，所以启动是否成功不用接口数据，后端通了就可以把流量切过去了
-
 	// 从接口更新状态
 	res, err := DescribeDBInstanceAttribute(ak, sk, regionId, DBInstanceId)
 
@@ -156,15 +154,22 @@ func StartDBInstance(ak string, sk string, regionId string, DBInstanceId string,
 		return true, nil
 	}
 
-	// 执行开启动作
-	startResponse := StartDBInstanceResponse{}
-	err = CallClickhouseAPI(ak, sk, "StartDBInstance", regionId, DBInstanceId, &startResponse)
+	// 执行开启动作,只有状态是STOPPED的时候才能执行启动操作
+	if res.Data.Status == "STOPPED" {
+		startResponse := StartDBInstanceResponse{}
+		err = CallClickhouseAPI(ak, sk, "StartDBInstance", regionId, DBInstanceId, &startResponse)
 
-	if err != nil {
-		return false, err
+		if err != nil {
+			return false, err
+		}
+	} else if res.Data.Status == "STARTING" {
+		// 不需要执行任何操作
+	} else {
+		return false, nil
 	}
 
-	success, err := WaitForInstanceStatus(ak, sk, regionId, DBInstanceId, "RUNNING", maxWaitSeconds)
+	// 等待启动成功
+	success, err := WaitForInstanceStatus(ak, sk, regionId, DBInstanceId, "ACTIVATION", maxWaitSeconds)
 
 	if err != nil {
 		return false, err
