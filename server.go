@@ -108,6 +108,7 @@ func StopInstanceTimer(config *ServerConfig, instances map[string]DBInstanceStat
 }
 
 func (s *server) KeepAlive(ctx context.Context, in *pb.KeepAliveRequest) (*pb.KeepAliveResponse, error) {
+	log.Default().Printf("KeepAlive: RegionID: %s, DBInstanceID: %s", in.RegionID, in.DBInstanceID)
 
 	globalLock.Lock()
 
@@ -132,7 +133,7 @@ func (s *server) KeepAlive(ctx context.Context, in *pb.KeepAliveRequest) (*pb.Ke
 	}
 	if instance.DBInstanceAttribute.Data.Status == "ACTIVATION" {
 		instance.lastConnTime = time.Now()
-		return &pb.KeepAliveResponse{Success: true}, nil
+
 	} else if instance.DBInstanceAttribute.Data.Status == "STOPPED" {
 		config := GetDBInstanceConfig(s.config, in.RegionID, in.DBInstanceID)
 		// 走到这不需要判断config是否为空，因为上面已经判断过了
