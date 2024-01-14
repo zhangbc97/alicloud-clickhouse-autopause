@@ -148,8 +148,10 @@ func (s *server) KeepAlive(ctx context.Context, in *pb.KeepAliveRequest) (*pb.Ke
 		log.Default().Printf("KeepAlive: Instance status is %s", instance.DBInstanceAttribute.Data.Status)
 		return &pb.KeepAliveResponse{Success: false}, nil
 	}
+
 	instance.lastConnTime = time.Now()
 	instances[in.DBInstanceID] = instance
+
 	return &pb.KeepAliveResponse{Success: true}, nil
 }
 
