@@ -12,7 +12,7 @@ jobs:
         with:
           ref: ${{ github.ref_name }}
       - name: Build Image
-        uses: aevea/action-kaniko@v0.10.0
+        uses: aevea/action-kaniko@v0.13.0
         with:
           image: zhangbc/alicloud-clickhouse-autopause
           username: ${{ secrets.DOCKER_USERNAME }}
